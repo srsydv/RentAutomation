@@ -19,9 +19,14 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 
+const corsOrigins = [
+  process.env.CLIENT_ORIGIN,
+  process.env.WEBSITE_HOSTNAME && `https://${process.env.WEBSITE_HOSTNAME}`,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+    origin: corsOrigins.length > 0 ? corsOrigins : "http://localhost:3000",
     credentials: true,
   })
 );
