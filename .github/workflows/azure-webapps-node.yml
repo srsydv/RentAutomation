@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  # Must match your App Service name in Azure Portal (case-sensitive)
-  AZURE_WEBAPP_NAME: RentAutomation
+  # Must match App Service name in Azure (resource: rentautomation)
+  AZURE_WEBAPP_NAME: rentautomation
 
 jobs:
   build-and-deploy:
@@ -28,11 +28,15 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ""
 
-      # Requires repository secret: AZURE_WEBAPP_PUBLISH_PROFILE
-      # Azure Portal → Web App → Get publish profile → paste full XML into GitHub secret
+      - name: Slim deploy package (faster upload)
+        run: |
+          rm -rf client/node_modules client/src client/.next client/out
+
+      # Secret: AZURE_WEBAPP_PUBLISH_PROFILE — download from Production slot only
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: production
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
