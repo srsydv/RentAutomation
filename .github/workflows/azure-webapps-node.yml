@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  # Must match your App Service name in Azure Portal
+  # Must match your App Service name in Azure Portal (case-sensitive)
   AZURE_WEBAPP_NAME: RentAutomation
 
 jobs:
@@ -28,18 +28,9 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ""
 
-      - name: Require Azure publish profile secret
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
-        run: |
-          echo "::error::Missing GitHub secret AZURE_WEBAPP_PUBLISH_PROFILE."
-          echo "1. Azure Portal → your Web App → Get publish profile (download XML)"
-          echo "2. GitHub → repo Settings → Secrets and variables → Actions → New repository secret"
-          echo "3. Name: AZURE_WEBAPP_PUBLISH_PROFILE — paste entire XML file contents"
-          echo "4. Re-run this workflow"
-          exit 1
-
+      # Requires repository secret: AZURE_WEBAPP_PUBLISH_PROFILE
+      # Azure Portal → Web App → Get publish profile → paste full XML into GitHub secret
       - name: Deploy to Azure Web App
-        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
