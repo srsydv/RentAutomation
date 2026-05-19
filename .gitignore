@@ -6,6 +6,7 @@ node_modules/
 # Next.js
 client/.next/
 client/out/
+client/dist/
 
 # Logs
 *.log
