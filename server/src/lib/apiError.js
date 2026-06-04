@@ -2,6 +2,9 @@ function duplicateKeyMessage(e) {
   const fields = e.keyPattern ? Object.keys(e.keyPattern) : [];
   const values = e.keyValue || {};
 
+  if (fields.includes("propertyContractAddress")) {
+    return "Stale MongoDB index propertyContractAddress_1 is blocking saves. Restart the app after deploy, or in Atlas drop that index on the properties collection.";
+  }
   if (fields.includes("dueDay") || (fields.includes("landlordId") && values.dueDay != null)) {
     return `You already have a property with due day ${values.dueDay}. Multiple properties can share the same due day — a stale database index was blocking this. Restart the app after deploy, or use Atlas → Indexes to drop a unique index on properties.dueDay.`;
   }
