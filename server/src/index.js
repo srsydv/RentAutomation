@@ -14,6 +14,7 @@ import notificationRoutes from "./routes/notifications.js";
 import uploadRoutes from "./routes/upload.js";
 import reportRoutes from "./routes/reports.js";
 import { startReminderCron } from "./services/reminderCron.js";
+import { syncAllIndexes } from "./lib/syncIndexes.js";
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -76,8 +77,13 @@ app.listen(port, "0.0.0.0", () => {
 
 mongoose
   .connect(mongoUri)
-  .then(() => {
+  .then(async () => {
     console.log("MongoDB connected");
+    try {
+      await syncAllIndexes();
+    } catch (err) {
+      console.error("Index sync warning:", err.message);
+    }
     startReminderCron();
   })
   .catch((err) => {

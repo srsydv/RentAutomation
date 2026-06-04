@@ -1,3 +1,22 @@
+function duplicateKeyMessage(e) {
+  const fields = e.keyPattern ? Object.keys(e.keyPattern) : [];
+  const values = e.keyValue || {};
+
+  if (fields.includes("dueDay") || (fields.includes("landlordId") && values.dueDay != null)) {
+    return `You already have a property with due day ${values.dueDay}. Multiple properties can share the same due day — a stale database index was blocking this. Restart the app after deploy, or use Atlas → Indexes to drop a unique index on properties.dueDay.`;
+  }
+  if (fields.includes("phone")) {
+    return `A tenant with phone ${values.phone || ""} already exists for your account.`;
+  }
+  if (fields.includes("email")) {
+    return "This email is already registered.";
+  }
+  if (fields.length) {
+    return `Duplicate value for: ${fields.join(", ")}`;
+  }
+  return "Duplicate record — check MongoDB indexes in Atlas.";
+}
+
 export function sendApiError(res, e, context) {
   console.error(context, e);
 
@@ -9,7 +28,7 @@ export function sendApiError(res, e, context) {
   }
 
   if (e.code === 11000) {
-    return res.status(409).json({ error: "Duplicate record" });
+    return res.status(409).json({ error: duplicateKeyMessage(e) });
   }
 
   if (e.name === "CastError") {
