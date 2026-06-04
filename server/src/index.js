@@ -68,17 +68,19 @@ if (fs.existsSync(clientDist)) {
 
 const port = Number(process.env.PORT || 4000);
 const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/rentlandlord";
+const mongoDbName = process.env.MONGODB_DB_NAME || "rentlandlord";
 
 app.listen(port, "0.0.0.0", () => {
   console.log(`Listening on port ${port}`);
   console.log(`Static UI path: ${clientDist} (exists: ${fs.existsSync(clientDist)})`);
   console.log(`MONGODB_URI configured: ${Boolean(process.env.MONGODB_URI)}`);
+  console.log(`MongoDB database: ${mongoDbName}`);
 });
 
 mongoose
-  .connect(mongoUri)
+  .connect(mongoUri, { dbName: mongoDbName })
   .then(async () => {
-    console.log("MongoDB connected");
+    console.log(`MongoDB connected (database: ${mongoose.connection.db?.databaseName})`);
     try {
       await syncAllIndexes();
     } catch (err) {
