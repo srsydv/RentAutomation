@@ -1,5 +1,8 @@
 import express from "express";
+import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/auth.js";
+import { requireDb } from "../middleware/db.js";
+import { sendApiError } from "../lib/apiError.js";
 import { Tenant } from "../models/Tenant.js";
 import { Property } from "../models/Property.js";
 import { PaymentHistory } from "../models/PaymentHistory.js";
@@ -7,6 +10,7 @@ import { Notification } from "../models/Notification.js";
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(requireDb);
 
 function monthKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -27,18 +31,21 @@ router.post("/", async (req, res) => {
     }
     const prop = await Property.findOne({ _id: propertyId, landlordId: req.userId });
     if (!prop) return res.status(404).json({ error: "Property not found" });
+    const rent = Number(rentAmount);
+    if (!Number.isFinite(rent) || rent < 0) {
+      return res.status(400).json({ error: "rentAmount must be a valid number ≥ 0" });
+    }
     const tenant = await Tenant.create({
-      landlordId: req.userId,
+      landlordId: new mongoose.Types.ObjectId(req.userId),
       propertyId,
       name: String(name).trim(),
       phone: phone ? String(phone).trim() : "",
-      rentAmount: Number(rentAmount),
+      rentAmount: rent,
       paymentStatus: "pending",
     });
     res.status(201).json(tenant);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Server error" });
+    sendApiError(res, e, "tenants create");
   }
 });
 

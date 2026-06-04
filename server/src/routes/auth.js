@@ -1,20 +1,11 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
+import { requireDb } from "../middleware/db.js";
+import { sendApiError } from "../lib/apiError.js";
 import { User } from "../models/User.js";
 
 const router = express.Router();
-
-function requireDb(_req, res, next) {
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({
-      error: "Database unavailable. Set MONGODB_URI in Azure App Service configuration.",
-    });
-  }
-  next();
-}
-
 router.use(requireDb);
 
 router.post("/register", async (req, res) => {
@@ -30,9 +21,7 @@ router.post("/register", async (req, res) => {
     const token = signToken(user);
     res.status(201).json({ token, user: { id: user._id, email: user.email } });
   } catch (e) {
-    console.error("register error:", e);
-    const msg = e.message?.includes("JWT_SECRET") ? e.message : "Server error";
-    res.status(500).json({ error: msg });
+    sendApiError(res, e, "register");
   }
 });
 
@@ -46,9 +35,7 @@ router.post("/login", async (req, res) => {
     const token = signToken(user);
     res.json({ token, user: { id: user._id, email: user.email } });
   } catch (e) {
-    console.error("login error:", e);
-    const msg = e.message?.includes("JWT_SECRET") ? e.message : "Server error";
-    res.status(500).json({ error: msg });
+    sendApiError(res, e, "login");
   }
 });
 
