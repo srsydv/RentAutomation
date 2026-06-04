@@ -6,31 +6,46 @@ import { PaymentHistory } from "../models/PaymentHistory.js";
 import { Notification } from "../models/Notification.js";
 import { LeaseFile } from "../models/LeaseFile.js";
 
-/** Unique indexes left by other apps on a shared Atlas DB (e.g. web3 property contracts). */
+/** From another app on the same Atlas cluster — blocks 2nd property (only one null allowed). */
+export const STALE_PROPERTY_INDEX = "propertyContractAddress_1";
+
 const STALE_INDEXES = {
-  properties: ["propertyContractAddress_1"],
+  properties: [STALE_PROPERTY_INDEX],
   tenants: [],
 };
 
-async function dropStaleIndexes() {
+/** E11000 on propertyContractAddress: null — first property worked, second fails. */
+export function isPropertyContractIndexError(e) {
+  return (
+    e?.code === 11000 &&
+    (e?.keyPattern?.propertyContractAddress != null ||
+      String(e?.message || "").includes("propertyContractAddress"))
+  );
+}
+
+export async function dropStaleIndexes() {
   const db = mongoose.connection.db;
-  if (!db) return;
+  if (!db) return false;
+
+  const dbName = db.databaseName;
+  let dropped = false;
 
   for (const [collectionName, indexNames] of Object.entries(STALE_INDEXES)) {
     const coll = db.collection(collectionName);
     for (const indexName of indexNames) {
       try {
         await coll.dropIndex(indexName);
-        console.log(`Dropped stale index ${collectionName}.${indexName}`);
+        console.log(`Dropped stale index ${dbName}.${collectionName}.${indexName}`);
+        dropped = true;
       } catch (err) {
         if (err.code === 27 || err.codeName === "IndexNotFound") continue;
-        console.warn(`Could not drop ${collectionName}.${indexName}:`, err.message);
+        console.warn(`Could not drop ${dbName}.${collectionName}.${indexName}:`, err.message);
       }
     }
   }
+  return dropped;
 }
 
-/** Drop stale indexes, then align indexes with our Mongoose schemas. */
 export async function syncAllIndexes() {
   await dropStaleIndexes();
 

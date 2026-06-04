@@ -3,6 +3,10 @@ import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/auth.js";
 import { requireDb } from "../middleware/db.js";
 import { sendApiError } from "../lib/apiError.js";
+import {
+  dropStaleIndexes,
+  isPropertyContractIndexError,
+} from "../lib/syncIndexes.js";
 import { Property } from "../models/Property.js";
 import { Tenant } from "../models/Tenant.js";
 
@@ -18,6 +22,15 @@ router.get("/", async (req, res) => {
     sendApiError(res, e, "properties list");
   }
 });
+
+async function createPropertyRecord(landlordId, name, rent, day) {
+  return Property.create({
+    landlordId,
+    name: String(name).trim(),
+    rentAmount: rent,
+    dueDay: day,
+  });
+}
 
 router.post("/", async (req, res) => {
   try {
@@ -36,12 +49,21 @@ router.post("/", async (req, res) => {
     }
 
     const landlordId = new mongoose.Types.ObjectId(req.userId);
-    const property = await Property.create({
-      landlordId,
-      name: String(name).trim(),
-      rentAmount: rent,
-      dueDay: day,
-    });
+    let property;
+
+    try {
+      property = await createPropertyRecord(landlordId, name, rent, day);
+    } catch (createErr) {
+      if (isPropertyContractIndexError(createErr)) {
+        console.warn(
+          "propertyContractAddress_1 blocked insert — dropping stale index and retrying"
+        );
+        await dropStaleIndexes();
+        property = await createPropertyRecord(landlordId, name, rent, day);
+      } else {
+        throw createErr;
+      }
+    }
 
     let tenant = null;
     const trimmedTenant = tenantName ? String(tenantName).trim() : "";
