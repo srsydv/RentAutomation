@@ -28,21 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const t = getToken();
-    if (!t) {
-      setReady(true);
-      return;
-    }
-    try {
-      const payload = JSON.parse(atob(t.split(".")[1])) as { sub?: string; email?: string };
-      if (payload?.sub) {
-        setUser({ id: payload.sub, email: payload.email || "Landlord" });
+    const loadFromStorage = () => {
+      const t = getToken();
+      if (!t) {
+        setUser(null);
+        setReady(true);
+        return;
       }
-    } catch {
-      setUser(null);
+      try {
+        const payload = JSON.parse(atob(t.split(".")[1])) as { sub?: string; email?: string };
+        if (payload?.sub) {
+          setUser({ id: payload.sub, email: payload.email || "Landlord" });
+        } else {
+          setUser(null);
+          setToken(null);
+        }
+      } catch {
+        setUser(null);
+        setToken(null);
+      }
+      setReady(true);
+    };
+
+    loadFromStorage();
+    const onExpired = () => {
       setToken(null);
-    }
-    setReady(true);
+      setUser(null);
+    };
+    window.addEventListener("rentlandlord:auth-expired", onExpired);
+    return () => window.removeEventListener("rentlandlord:auth-expired", onExpired);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {

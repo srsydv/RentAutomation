@@ -33,6 +33,12 @@ export async function api<T>(
     } catch {
       /* ignore */
     }
+    if (res.status === 401 && auth) {
+      setToken(null);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("rentlandlord:auth-expired"));
+      }
+    }
     throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;

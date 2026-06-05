@@ -11,6 +11,7 @@ const nav = [
   { href: "/properties", label: "Properties" },
   { href: "/tenants", label: "Tenants" },
   { href: "/payments", label: "Payments" },
+  { href: "/assistant", label: "AI Assistant" },
 ];
 
 type Notif = { _id: string; title: string; message: string; read: boolean; createdAt: string };

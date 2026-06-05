@@ -15,6 +15,7 @@ import uploadRoutes from "./routes/upload.js";
 import reportRoutes from "./routes/reports.js";
 import { startReminderCron } from "./services/reminderCron.js";
 import { syncAllIndexes } from "./lib/syncIndexes.js";
+import aiRoutes from "./routes/ai.js";
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +56,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/ai", aiRoutes);
 
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist, { extensions: ["html"] }));
